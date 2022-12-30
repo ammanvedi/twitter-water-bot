@@ -13,8 +13,7 @@ terraform {
   }
 
   backend "s3" {
-    # TODO: Change as needed
-    bucket = "purescriptlambda"
+    bucket = "twitterwaterbot"
     key    = "state"
   }
 }
@@ -24,12 +23,9 @@ terraform {
 module "lambda" {
   source = "./lambda"
 
-  # TODO: Change as needed
-  lambda_function_name = "purescript_lambda"
-  # TODO: Change as needed
-  iam_policy_name = "purescript_lambda_policy"
-  # TODO: Change as needed
-  iam_role_name = "purescript_lambda_role"
+  lambda_function_name = "twitter_water_bot"
+  iam_policy_name = "twitter_water_bot_policy"
+  iam_role_name = "twitter_water_bot_role"
 
   # Do not change
   source_path = "${path.root}/../dist"
