@@ -14,11 +14,14 @@ import Data.Maybe (Maybe(..))
 import Data.HTTP.Method (Method(GET))
 import Fetch (fetch)
 import Effect (Effect)
+import Effect.Class (liftEffect)
 import Effect.Uncurried (EffectFn1)
 import Fetch.Argonaut.Json (fromJson)
 import Control.Promise (fromAff, Promise)
 import Effect.Aff.Compat (mkEffectFn1)
 import Control.Monad.Error.Class (catchError)
+import Debug (trace)
+import Node.Process (lookupEnv)
 
 type JsonKey = String
 
@@ -73,6 +76,10 @@ run _ = do
                 }
             responseBody :: PokemonResponse <- fromJson response.json
             jsonString <- pure $ A.stringify $ encodeJson responseBody
+            envar <- liftEffect $ lookupEnv "TF_VAR_twitter_consumer_key"
+            envarUnwrap <- case envar of
+                            Just s -> pure s
+                            Nothing -> pure "nothing"
             pure { statusCode: 200, headers: FO.empty, body: jsonString }
 
 handlerCurried :: LambdaEvent -> Effect (Promise AWSAPIGatewayResponse)

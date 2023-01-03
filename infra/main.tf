@@ -27,6 +27,11 @@ module "lambda" {
   iam_policy_name = "twitter_water_bot_policy"
   iam_role_name = "twitter_water_bot_role"
 
+  twitter_consumer_key = var.twitter_consumer_key
+  twitter_consumer_secret = var.twitter_consumer_secret
+  twitter_access_token = var.twitter_access_token
+  twitter_access_token_secret = var.twitter_access_token_secret
+
   # Do not change
   source_path = "${path.root}/../dist"
   dist_path = "${path.root}/../aws-dist"

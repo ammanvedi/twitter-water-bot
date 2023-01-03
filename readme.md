@@ -25,6 +25,20 @@ in `infra/main.tf` you should change elements marked with `# TODO: Change as nee
 ### Create Your Own `.env` File
 Create a `.env` file in the root of the project which matches the structure of the `.env.example` provided. See here for help getting [AWS secret keys](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-appendix-sign-up.html)
 
+You will want to get your twitter credentials as follows
+
+- create Twitter account for app
+- go to developer.twitter.com and create a developer account
+- create an application with essential access 
+- save your key and secret (consumer key and consumer secret)
+- go to projects and apps > your project > your app
+- go to Keys and Tokens
+- Authentication Tokens > Access Token and secret
+- generate pair
+- save them
+- now we will use these in the .env file
+
+
 ### Run a Build
 Run `./scripts/build.sh` and with any luck your code will be built to the dist folder. You can have a look and see whet purescript will generate from the purs files.
 

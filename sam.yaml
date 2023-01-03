@@ -10,3 +10,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: "./dist/"
+      Environment:
+        Variables:
+          TF_VAR_twitter_consumer_key: !Ref TF_VAR_twitter_consumer_key
+          TF_VAR_twitter_consumer_secret: !Ref TF_VAR_twitter_consumer_secret
+          TF_VAR_twitter_access_token: !Ref TF_VAR_twitter_access_token
+          TF_VAR_twitter_access_token_secret: !Ref TF_VAR_twitter_access_token_secret

@@ -73,4 +73,12 @@ resource "aws_lambda_function" "terraform_lambda_func" {
   runtime                        = "nodejs18.x"
   source_code_hash               = "${base64sha256(filebase64(local.source_archive))}"
   depends_on                     = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  environment {
+    variables = {
+      TF_VAR_twitter_consumer_key = var.twitter_consumer_key
+      TF_VAR_twitter_consumer_secret = var.twitter_consumer_secret
+      TF_VAR_twitter_access_token = var.twitter_access_token
+      TF_VAR_twitter_access_token_secret = var.twitter_access_token_secret
+    }
+  }
 }

@@ -17,6 +17,8 @@ to generate this file without the comments in this block.
   , "argonaut-codecs"
   , "argonaut-core"
   , "console"
+  , "crypto"
+  , "debug"
   , "effect"
   , "either"
   , "fetch"
@@ -24,6 +26,7 @@ to generate this file without the comments in this block.
   , "foreign-object"
   , "http-methods"
   , "maybe"
+  , "node-process"
   , "prelude"
   , "transformers"
   ]
