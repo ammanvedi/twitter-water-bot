@@ -132,8 +132,3 @@ getOAuthSignature credentials request nonce ts = do
     hmacUpdate <- update bufferPayload hmac
     digestedValue <- digest hmacUpdate
     Buffer.toString Base64 digestedValue
-
-
--- todo:
--- use https://pursuit.purescript.org/packages/purescript-crypto/5.0.1/docs/Node.Crypto.Hmac
--- finish impl based on https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
