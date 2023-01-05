@@ -20,7 +20,6 @@ import Fetch.Argonaut.Json (fromJson)
 import Control.Promise (fromAff, Promise)
 import Effect.Aff.Compat (mkEffectFn1)
 import Control.Monad.Error.Class (catchError)
-import Debug (trace)
 import Node.Process (lookupEnv)
 
 type JsonKey = String
