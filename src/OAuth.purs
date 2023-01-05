@@ -1,4 +1,4 @@
-module OAuth (getOAuthSignature, OAuthCredentials, RequestParameters) where
+module OAuth (getAuthorizationHeader, getOAuthSignature, OAuthCredentials, RequestParameters) where
 
 import Prelude
 
@@ -6,20 +6,25 @@ import Data.HTTP.Method (Method(..), print)
 import Data.Map (Map, lookup, keys)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Array
+import Data.Show
 import Data.Ord (compare)
 import Data.Boolean
 import Data.Number.Format (toString)
 import Data.Eq
 import Data.Either (Either(..))
 import Data.String
-import Data.Int (toNumber)
+import Data.Int (toNumber, ceil)
 import JSURI (encodeURIComponent)
 import Data.Foldable (foldl)
 import Node.Buffer as Buffer
 import Node.Encoding
+import Node.Crypto (randomBytes)
 import Node.Crypto.Hmac
 import Effect (Effect)
 import Effect.Exception (try, Error, error, throw)
+import Effect.Now
+import Data.DateTime.Instant
+import Data.Time.Duration
 
 data ParamPair = ParamPair String String
 
@@ -132,3 +137,34 @@ getOAuthSignature credentials request nonce ts = do
     hmacUpdate <- update bufferPayload hmac
     digestedValue <- digest hmacUpdate
     Buffer.toString Base64 digestedValue
+
+getNonce :: Effect String
+getNonce = do
+    bytes <- randomBytes 16
+    Buffer.toString Base64 bytes
+
+currentTimetamp :: Effect Int
+currentTimetamp = do
+    instant <- now
+    (Milliseconds m) <- pure $ unInstant instant
+    pure $ ceil $ m / 1000.0
+
+getAuthorizationHeader :: OAuthCredentials -> RequestParameters -> Maybe OAuthTimestamp -> Maybe OAuthNonce -> Effect String
+getAuthorizationHeader credentials request ts n = do
+    nonce <- case n of
+                Just non -> pure non
+                Nothing -> getNonce
+    timestamp <- case ts of
+                    Just t -> pure t
+                    Nothing -> currentTimetamp
+    signature <- getOAuthSignature credentials request nonce timestamp
+    pure $ "OAuth oauth_consumer_key=\""
+            <> credentials.consumerKey <>
+            "\",oauth_token=\""
+            <> credentials.accessToken <>
+            "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\""
+            <> (toString $ toNumber timestamp) <>
+            "\",oauth_nonce=\""
+            <> nonce <>
+            "\",oauth_version=\"1.0\",oauth_signature=\""
+            <> signature <> "\""
