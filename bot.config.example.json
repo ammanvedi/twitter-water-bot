@@ -1,0 +1,6 @@
+{
+  "targetHandles": ["@someuser"],
+  "messages": [
+    "<username> you should drink some water"
+  ]
+}

@@ -13,6 +13,8 @@ import Data.Number.Format (toString)
 import Data.Eq
 import Data.Either (Either(..))
 import Data.String
+import Data.String.Regex as RGX
+import Data.String.Regex.Flags
 import Data.Int (toNumber, ceil)
 import JSURI (encodeURIComponent)
 import Data.Foldable (foldl)
@@ -25,6 +27,7 @@ import Effect.Exception (try, Error, error, throw)
 import Effect.Now
 import Data.DateTime.Instant
 import Data.Time.Duration
+
 
 data ParamPair = ParamPair String String
 
@@ -136,12 +139,22 @@ getOAuthSignature credentials request nonce ts = do
     hmac <- createHmac "sha1" bufferKey
     hmacUpdate <- update bufferPayload hmac
     digestedValue <- digest hmacUpdate
-    Buffer.toString Base64 digestedValue
+    unencodedResult <- Buffer.toString Base64 digestedValue
+    encodedResult <- pure $ percentEncodeStr unencodedResult
+    case encodedResult of
+        Just r -> pure r
+        Nothing -> throw "Could not percent encode oauth signature"
+
 
 getNonce :: Effect String
 getNonce = do
-    bytes <- randomBytes 16
-    Buffer.toString Base64 bytes
+    bytes <- randomBytes 11
+    rawString <- Buffer.toString Base64 bytes
+    replaceRegex <- pure $ RGX.regex "\\+|/|=" global
+    case replaceRegex of
+        Left err -> throw err
+        Right rgx -> pure $ RGX.replace rgx "" rawString
+
 
 currentTimetamp :: Effect Int
 currentTimetamp = do

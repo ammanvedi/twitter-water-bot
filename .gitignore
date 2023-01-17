@@ -14,3 +14,4 @@ dist
 .terraform
 aws-dist
 .DS_Store
+bot.config.json

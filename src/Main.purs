@@ -10,9 +10,10 @@ import Data.Argonaut.Core as A
 import Data.Argonaut.Decode (JsonDecodeError(..))
 import Data.Argonaut.Encode.Class (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode (toJsonString)
 import Data.Maybe (Maybe(..))
-import Data.HTTP.Method (Method(GET))
-import Fetch (fetch)
+import Data.HTTP.Method (Method(POST))
+import Fetch (fetch, Response)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Uncurried (EffectFn1)
@@ -21,6 +22,13 @@ import Control.Promise (fromAff, Promise)
 import Effect.Aff.Compat (mkEffectFn1)
 import Control.Monad.Error.Class (catchError)
 import Node.Process (lookupEnv)
+import Effect.Exception (Error)
+import Data.Show (show)
+import Waterbot.Config (WaterbotConfig(..), getConfig)
+import OAuth
+import Data.Map (empty)
+import Data.Traversable (sequence)
+import Waterbot.Messages (getMessage)
 
 type JsonKey = String
 
@@ -40,8 +48,8 @@ instance pokemonResponseDecode :: DecodeJson PokemonResponse where
 instance pokemonResponseEncode :: EncodeJson PokemonResponse where
     encodeJson (PokemonResponse p) = encodeJson p
 
-failResponse :: Aff AWSAPIGatewayResponse
-failResponse = pure { statusCode: 500, headers: FO.empty, body: "Failed" }
+failResponse :: Error -> Aff AWSAPIGatewayResponse
+failResponse e = pure { statusCode: 500, headers: FO.empty, body: show e }
 
 
 
@@ -66,20 +74,45 @@ jsonLookupString k o = do
                 Nothing -> Left (TypeMismatch "value was not a string")
     pure parsed
 
+sendTweet :: String -> String -> Aff Response
+sendTweet message authHeader =
+    fetch "https://api.twitter.com/2/tweets"
+        { method: POST
+        , body: toJsonString { text: message }
+        , headers: { "Content-Type": "application/json", "Authorization": authHeader }
+        }
+
 run :: LambdaEvent -> Aff AWSAPIGatewayResponse
 run _ = do
-            response <- fetch "https://pokeapi.co/api/v2/pokemon/ditto"
-                {
-                    method: GET,
-                    headers: { "Content-Type": "application/json" }
-                }
-            responseBody :: PokemonResponse <- fromJson response.json
-            jsonString <- pure $ A.stringify $ encodeJson responseBody
-            envar <- liftEffect $ lookupEnv "TF_VAR_twitter_consumer_key"
-            envarUnwrap <- case envar of
-                            Just s -> pure s
-                            Nothing -> pure "nothing"
-            pure { statusCode: 200, headers: FO.empty, body: jsonString }
+            WaterbotConfig ({
+                targetHandles,
+                messages,
+                twitterConsumerKey,
+                twitterConsumerSecret,
+                twitterAccessToken,
+                twitterAccessTokenSecret
+            }) <- liftEffect $ getConfig
+            authHeader <- liftEffect $
+                getAuthorizationHeader
+                    {
+                        consumerKey: twitterConsumerKey,
+                        consumerSecret: twitterConsumerSecret,
+                        accessToken: twitterAccessToken,
+                        accessTokenSecret: twitterAccessTokenSecret
+                    }
+                    {
+                        method: POST,
+                        baseUrl: "https://api.twitter.com/2/tweets",
+                        parameters: empty
+                    }
+                    Nothing
+                    Nothing
+            response <- sequence $
+                            (\handle -> do
+                                message <- liftEffect $ getMessage handle messages
+                                sendTweet message authHeader
+                            ) <$> targetHandles
+            pure { statusCode: 200, headers: FO.empty, body: ""  }
 
 handlerCurried :: LambdaEvent -> Effect (Promise AWSAPIGatewayResponse)
                     -- convert from an Aff to an Eff
@@ -89,7 +122,7 @@ handlerCurried e = fromAff
                         -- Actually create the effect that will run
                         (run e)
                         -- If it fails then return a failure response
-                        (\_ -> failResponse)
+                        (\e -> failResponse e)
 
 -- We want to export an uncurried version of the function so we can call
 -- handler(event) and get back a promise instead of handler(event)()
